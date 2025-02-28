@@ -99,8 +99,8 @@ If you encounter issues with the integration:
 
 For support with this integration, please contact:
 
-- Email: [your-support-email@example.com](mailto:your-support-email@example.com)
-- Website: [your-website.com](https://your-website.com)
+- Email: [steven@chalamministries.com](mailto:steven@chalamministries.com)
+- Discord: [https://discord.gg/JzDg7Vs4](https://discord.gg/JzDg7Vs4)
 
 ## License
 
