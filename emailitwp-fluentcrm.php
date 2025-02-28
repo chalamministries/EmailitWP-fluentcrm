@@ -3,8 +3,8 @@
 Plugin Name: EmailIt FluentCRM Integration
 Plugin URI: 
 Description: FluentCRM integration for EmailIt Mailer
-Version: 1.0
-Author: Your Name
+Version: 1.9
+Author: Steven Gauerke
 Requires at least: 5.8
 Requires PHP: 7.4
 License: GPL2
@@ -39,9 +39,11 @@ class EmailItFluentCRM {
 	}
 	
 	public function register_fluentcrm_tab() {
-		$emailit = EmailItMailer::get_instance();
-		// Register before docs (100) but after settings (10)
-		$emailit->register_tab('fluentcrm', 'FluentCRM', [$this, 'render_fluentcrm_tab'], 80);
+		if (class_exists('EmailItMailer')) {
+			$emailit = EmailItMailer::get_instance();
+			// Register before docs (100) but after settings (10)
+			$emailit->register_tab('fluentcrm', 'FluentCRM', [$this, 'render_fluentcrm_tab'], 80);
+		}
 	}
 
 	public function init() {
@@ -50,14 +52,9 @@ class EmailItFluentCRM {
 			return;
 		}
 
-		// Add our FluentCRM integration hooks
-		$this->register_mailer_service();
+		// Register our hooks to intercept FluentCRM emails
+		$this->register_email_hooks();
 		
-		// Hook into FluentCRM API sending
-		add_filter('fluentmail_will_send', [$this, 'maybe_use_emailit'], 10, 2);
-		
-		// Add custom connection settings
-		add_action('fluentcrm_connections_settings', [$this, 'register_connection_settings']);
 	}
 
 	private function check_dependencies() {
@@ -71,7 +68,8 @@ class EmailItFluentCRM {
 			$missing_plugins[] = 'FluentCRM';
 		}
 
-		if (!is_plugin_active('emailit_mailer/emailit_mailer.php')) {
+		// Check for EmailIt with correct path
+		if (!is_plugin_active('EmailitWP-main/emailit_mailer.php')) {
 			$missing_plugins[] = 'EmailIt Mailer';
 		}
 
@@ -127,7 +125,7 @@ class EmailItFluentCRM {
 				<h3>Recommended Settings</h3>
 				<ul style="list-style-type: disc; margin-left: 20px;">
 					<li>Ensure your EmailIt API key is properly configured in the main EmailIt settings page.</li>
-					<li>Verify your sending domains in both EmailIt and FluentCRM match.</li>
+					<li>Verify your sending domains in EmailIt to ensure proper email delivery.</li>
 					<li>If you experience any issues, try disabling other email sending plugins that might conflict.</li>
 				</ul>
 			</div>
@@ -136,108 +134,32 @@ class EmailItFluentCRM {
 	}
 	
 	/**
-	 * Register EmailIt as a mailer service for FluentCRM
+	 * Register hooks to intercept FluentCRM emails
 	 */
-	public function register_mailer_service() {
-		if (!function_exists('fluentcrm_get_option')) {
-			return;
-		}
-		
-		add_filter('fluentcrm_email_services', function($services) {
-			$services['emailit'] = [
-				'title' => 'EmailIt',
-				'description' => 'Send emails using EmailIt API.',
-				'logo' => plugin_dir_url(__FILE__) . 'assets/emailit-logo.svg',
-				'enabled' => true
-			];
-			return $services;
-		});
-	}
-	
-	/**
-	 * Process FluentCRM emails through EmailIt if enabled
-	 */
-	public function maybe_use_emailit($willSend, $data) {
+	private function register_email_hooks() {
 		$is_enabled = get_option('emailit_fluentcrm_enabled', 'yes');
-		
-		if ($is_enabled !== 'yes' || !EmailItMailer::is_api_active()) {
-			return $willSend;
-		}
-		
-		// Get EmailIt instance
-		$emailit = EmailItMailer::get_instance();
-		$settings = $emailit->get_settings();
-		
-		if (empty($settings['api_key'])) {
-			return $willSend;
-		}
-		
-		try {
-			// Get email data from FluentCRM
-			$to = $data['to'];
-			$subject = $data['subject'];
-			$message = $data['message'];
-			$headers = isset($data['headers']) ? $data['headers'] : '';
-			$attachments = isset($data['attachments']) ? $data['attachments'] : array();
-			
-			// Extract text plain part if available
-			$text_message = '';
-			if (isset($data['messageText'])) {
-				$text_message = $data['messageText'];
-			}
-			
-			$args = array(
-				'to' => $to,
-				'subject' => $subject,
-				'message' => $message,
-				'headers' => $headers,
-				'attachments' => $attachments,
-				'text_message' => $text_message
-			);
-			
-			// Log if debug is enabled
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('EmailIt FluentCRM Integration: Sending email via EmailIt');
-				error_log(print_r($args, true));
-			}
-			
-			// Use the scheduled API just like in the main EmailIt plugin
-			wp_schedule_single_event(time(), 'emailit_send_mail_async', array($args));
-			
-			// Return false to prevent FluentCRM from sending the email itself
+		if($is_enabled) {
+			add_filter('fluent_crm/email_headers', [$this, 'add_fluentcrm_identifier_header'], 10, 2);
+			add_filter('fluent_crm/enable_mailer_to_name', function($status) {
 			return false;
-			
-		} catch (Exception $e) {
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('EmailIt FluentCRM Integration Error: ' . $e->getMessage());
-			}
-			return $willSend;
+			});
 		}
 	}
 	
-	/**
-	 * Register EmailIt settings in FluentCRM connections page
-	 */
-	public function register_connection_settings($settingsApi) {
-		$is_enabled = get_option('emailit_fluentcrm_enabled', 'yes');
-		$status = $is_enabled === 'yes' ? 'connected' : 'not_connected';
+	public function add_fluentcrm_identifier_header($headers, $data) {
+		// Add a custom header to identify FluentCRM emails
+		$headers['X-EmailIt-Source'] = 'FluentCRM';
 		
-		$settings = [
-			'title' => 'EmailIt',
-			'logo' => plugin_dir_url(__FILE__) . 'assets/emailit-logo.svg',
-			'description' => 'Send your FluentCRM emails using EmailIt API for better deliverability.',
-			'status' => $status,
-			'configure_url' => admin_url('options-general.php?page=emailit-settings&tab=fluentcrm')
-		];
+		// You can also modify other headers or perform additional operations here
 		
-		$settingsApi->addToConnectionSettings('emailit', $settings);
+		return $headers;
 	}
+	
 }
 
 // Initialize the plugin
 EmailItFluentCRM::get_instance();
 
-// Create plugin assets directory and save the logo if not exists
 add_action('plugins_loaded', function() {
 	$assets_dir = plugin_dir_path(__FILE__) . 'assets';
 	if (!file_exists($assets_dir)) {
