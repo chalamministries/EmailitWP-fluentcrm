@@ -16,6 +16,10 @@ This plugin integrates FluentCRM with the EmailIt email delivery service, allowi
 - EmailIt Mailer plugin activated and configured with a valid API key
 - FluentCRM plugin activated
 
+> [!NOTE]  
+> For optimal email delivery performance, we recommend disabling WordPress default cron and setting up a server-side cron job instead.
+> You can find the steps to set up this cron job below.
+
 ## Configuration
 
 ### Step 1: Configure EmailIt Mailer
@@ -34,11 +38,6 @@ Before using this integration, make sure your EmailIt Mailer plugin is properly 
 3. Check the "Enable Integration" box
 4. Click "Save Settings"
 
-### Step 3: Verify in FluentCRM (Optional)
-
-1. Go to **FluentCRM > Settings > Email Deliverability** 
-2. You should see EmailIt listed as a connection option
-3. Make sure EmailIt is configured as your preferred email service
 
 ## How It Works
 
@@ -47,6 +46,45 @@ When the integration is enabled:
 1. All FluentCRM emails (campaigns, automations, etc.) will be routed through the EmailIt API
 2. EmailIt will handle email delivery, tracking, and reporting
 3. Your sending domain configuration from EmailIt will be used
+
+# Setting Up Server-Side Cron for EmailIt Mailer
+
+For optimal email delivery performance, we recommend disabling WordPress default cron and setting up a server-side cron job instead.
+
+## Step 1: Disable WordPress Cron
+
+Add this line to your wp-config.php file:
+
+```php
+define('DISABLE_WP_CRON', true);
+```
+
+## Step 2: Set Up Server-Side Cron
+
+Choose one of these methods:
+
+### Option A: Standard Cron with wget
+
+Add this to your server's crontab (run `crontab -e`):
+
+`*/5 * * * * wget -q https://yourdomain.com/wp-cron.php?doing_wp_cron -O /dev/null`
+
+### Option B: WP-CLI (if available on your server)
+
+Add this to your server's crontab:
+
+`*/5 * * * * cd /path/to/wordpress && wp cron event run --due-now`
+
+### Option C: Third-Party Cron Service
+
+If you don't have access to server-side cron, use a service like [Cron-Job.org](https://cron-job.org):
+
+1.  Create an account
+2.  Add a new cronjob
+3.  Set the URL to: `https://yourdomain.com/wp-cron.php?doing_wp_cron`
+4.  Schedule it to run every 5 minutes
+
+The 5-minute frequency is recommended for typical email volume. Adjust as needed for your site's requirements.
 
 ## Troubleshooting
 
