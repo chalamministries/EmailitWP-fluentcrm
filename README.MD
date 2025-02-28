@@ -47,11 +47,11 @@ When the integration is enabled:
 2. EmailIt will handle email delivery, tracking, and reporting
 3. Your sending domain configuration from EmailIt will be used
 
-# Setting Up Server-Side Cron for EmailIt Mailer
+## Setting Up Server-Side Cron for EmailIt Mailer
 
 For optimal email delivery performance, we recommend disabling WordPress default cron and setting up a server-side cron job instead.
 
-## Step 1: Disable WordPress Cron
+### Step 1: Disable WordPress Cron
 
 Add this line to your wp-config.php file:
 
@@ -59,23 +59,23 @@ Add this line to your wp-config.php file:
 define('DISABLE_WP_CRON', true);
 ```
 
-## Step 2: Set Up Server-Side Cron
+### Step 2: Set Up Server-Side Cron
 
 Choose one of these methods:
 
-### Option A: Standard Cron with wget
+#### Option A: Standard Cron with wget
 
 Add this to your server's crontab (run `crontab -e`):
 
 `*/5 * * * * wget -q https://yourdomain.com/wp-cron.php?doing_wp_cron -O /dev/null`
 
-### Option B: WP-CLI (if available on your server)
+#### Option B: WP-CLI (if available on your server)
 
 Add this to your server's crontab:
 
 `*/5 * * * * cd /path/to/wordpress && wp cron event run --due-now`
 
-### Option C: Third-Party Cron Service
+#### Option C: Third-Party Cron Service
 
 If you don't have access to server-side cron, use a service like [Cron-Job.org](https://cron-job.org):
 
