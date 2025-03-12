@@ -69,7 +69,7 @@ class EmailItFluentCRM {
 		}
 
 		// Check for EmailIt with correct path
-		if (!is_plugin_active('EmailitWP-main/emailit_mailer.php')) {
+		if (!is_plugin_active('EmailitWP/emailit_mailer.php')) {
 			$missing_plugins[] = 'EmailIt Mailer';
 		}
 
