@@ -1,9 +1,9 @@
 <?php
 /*
 Plugin Name: EmailIt FluentCRM Integration
-Plugin URI: 
+Plugin URI: https://github.com/chalamministries/EmailitWP-fluentcrm
 Description: FluentCRM integration for EmailIt Mailer
-Version: 2.0
+Version: 2.1
 Author: Steven Gauerke
 Requires at least: 5.8
 Requires PHP: 7.4
