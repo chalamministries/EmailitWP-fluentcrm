@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!class_exists('EmailIt_FluentCRM_Plugin_Updater')) {
-	require_once plugin_dir_path(__FILE__) . 'class-emailit-updater.php';
+	require_once plugin_dir_path(__FILE__) . 'class-emailit-fluentcrm-updater.php';
 }
 
 class EmailItFluentCRM {
